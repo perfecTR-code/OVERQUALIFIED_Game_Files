@@ -1,0 +1,177 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!319 &31900000
+AvatarMask:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: RightArm_Mask
+  m_Mask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
+  m_Elements:
+  - m_Path: Armature
+    m_Weight: 0
+  - m_Path: Armature/body/body
+    m_Weight: 0
+  - m_Path: Armature/camera/camera
+    m_Weight: 0
+  - m_Path: Armature/camera/camera/camera_end
+    m_Weight: 0
+  - m_Path: Armature/camera_target/camera_target
+    m_Weight: 0
+  - m_Path: Armature/camera_target/camera_target/camera_target_end
+    m_Weight: 0
+  - m_Path: Armature/elbow_IK_L.L/elbow_IK_L.L
+    m_Weight: 0
+  - m_Path: Armature/elbow_IK_L.L/elbow_IK_L.L/elbow_IK_L.L_end
+    m_Weight: 0
+  - m_Path: Armature/elbow_IK_L.R/elbow_IK_L.R
+    m_Weight: 0
+  - m_Path: Armature/elbow_IK_L.R/elbow_IK_L.R/elbow_IK_L.R_end
+    m_Weight: 0
+  - m_Path: Armature/hand_IK_L.L/hand_IK_L.L
+    m_Weight: 0
+  - m_Path: Armature/hand_IK_L.L/hand_IK_L.L/hand_IK_L.L_end
+    m_Weight: 0
+  - m_Path: Armature/hand_IK_L.R/hand_IK_L.R
+    m_Weight: 0
+  - m_Path: Armature/hand_IK_L.R/hand_IK_L.R/hand_IK_L.R_end
+    m_Weight: 0
+  - m_Path: Armature/hand_L.L/hand_L.L
+    m_Weight: 0
+  - m_Path: Armature/hand_L.R/hand_L.R
+    m_Weight: 1
+  - m_Path: Armature/index_L.001.L/index_L.001.L
+    m_Weight: 0
+  - m_Path: Armature/index_L.001.L/index_L.001.L/index_L.001.L_end
+    m_Weight: 0
+  - m_Path: Armature/index_L.001.R/index_L.001.R
+    m_Weight: 1
+  - m_Path: Armature/index_L.001.R/index_L.001.R/index_L.001.R_end
+    m_Weight: 1
+  - m_Path: Armature/index_L.002.L/index_L.002.L
+    m_Weight: 0
+  - m_Path: Armature/index_L.002.R/index_L.002.R
+    m_Weight: 1
+  - m_Path: Armature/index_L.003.L/index_L.003.L
+    m_Weight: 0
+  - m_Path: Armature/index_L.003.R/index_L.003.R
+    m_Weight: 1
+  - m_Path: Armature/index_L.L/index_L.L
+    m_Weight: 0
+  - m_Path: Armature/index_L.R/index_L.R
+    m_Weight: 1
+  - m_Path: Armature/lowerarm_L.L/lowerarm_L.L
+    m_Weight: 0
+  - m_Path: Armature/lowerarm_L.R/lowerarm_L.R
+    m_Weight: 1
+  - m_Path: Armature/middle_L.001.L/middle_L.001.L
+    m_Weight: 0
+  - m_Path: Armature/middle_L.001.L/middle_L.001.L/middle_L.001.L_end
+    m_Weight: 0
+  - m_Path: Armature/middle_L.001.R/middle_L.001.R
+    m_Weight: 1
+  - m_Path: Armature/middle_L.001.R/middle_L.001.R/middle_L.001.R_end
+    m_Weight: 1
+  - m_Path: Armature/middle_L.002.L/middle_L.002.L
+    m_Weight: 0
+  - m_Path: Armature/middle_L.002.R/middle_L.002.R
+    m_Weight: 1
+  - m_Path: Armature/middle_L.003.L/middle_L.003.L
+    m_Weight: 0
+  - m_Path: Armature/middle_L.003.R/middle_L.003.R
+    m_Weight: 1
+  - m_Path: Armature/middle_L.L/middle_L.L
+    m_Weight: 0
+  - m_Path: Armature/middle_L.R/middle_L.R
+    m_Weight: 1
+  - m_Path: Armature/pink_L.001.L/pink_L.001.L
+    m_Weight: 0
+  - m_Path: Armature/pink_L.001.L/pink_L.001.L/pink_L.001.L_end
+    m_Weight: 0
+  - m_Path: Armature/pink_L.001.R/pink_L.001.R
+    m_Weight: 1
+  - m_Path: Armature/pink_L.001.R/pink_L.001.R/pink_L.001.R_end
+    m_Weight: 1
+  - m_Path: Armature/pink_L.002.L/pink_L.002.L
+    m_Weight: 0
+  - m_Path: Armature/pink_L.002.R/pink_L.002.R
+    m_Weight: 1
+  - m_Path: Armature/pink_L.003.L/pink_L.003.L
+    m_Weight: 0
+  - m_Path: Armature/pink_L.003.R/pink_L.003.R
+    m_Weight: 1
+  - m_Path: Armature/pink_L.L/pink_L.L
+    m_Weight: 0
+  - m_Path: Armature/pink_L.R/pink_L.R
+    m_Weight: 1
+  - m_Path: Armature/pose_controller/pose_controller
+    m_Weight: 0
+  - m_Path: Armature/ring_L.001.L/ring_L.001.L
+    m_Weight: 0
+  - m_Path: Armature/ring_L.001.R/ring_L.001.R
+    m_Weight: 1
+  - m_Path: Armature/ring_L.002.L/ring_L.002.L
+    m_Weight: 0
+  - m_Path: Armature/ring_L.002.R/ring_L.002.R
+    m_Weight: 1
+  - m_Path: Armature/ring_L.003.L/ring_L.003.L
+    m_Weight: 0
+  - m_Path: Armature/ring_L.003.L/ring_L.003.L/ring_L.003.L_end
+    m_Weight: 0
+  - m_Path: Armature/ring_L.003.R/ring_L.003.R
+    m_Weight: 1
+  - m_Path: Armature/ring_L.003.R/ring_L.003.R/ring_L.003.R_end
+    m_Weight: 1
+  - m_Path: Armature/ring_L.L/ring_L.L
+    m_Weight: 0
+  - m_Path: Armature/ring_L.R/ring_L.R
+    m_Weight: 1
+  - m_Path: Armature/shoulder_L.L/shoulder_L.L
+    m_Weight: 0
+  - m_Path: Armature/shoulder_L.R/shoulder_L.R
+    m_Weight: 1
+  - m_Path: Armature/thumb_L.001.L/thumb_L.001.L
+    m_Weight: 0
+  - m_Path: Armature/thumb_L.001.L/thumb_L.001.L/thumb_L.001.L_end
+    m_Weight: 0
+  - m_Path: Armature/thumb_L.001.R/thumb_L.001.R
+    m_Weight: 1
+  - m_Path: Armature/thumb_L.001.R/thumb_L.001.R/thumb_L.001.R_end
+    m_Weight: 1
+  - m_Path: Armature/thumb_L.002.L/thumb_L.002.L
+    m_Weight: 0
+  - m_Path: Armature/thumb_L.002.R/thumb_L.002.R
+    m_Weight: 1
+  - m_Path: Armature/thumb_L.L/thumb_L.L
+    m_Weight: 0
+  - m_Path: Armature/thumb_L.R/thumb_L.R
+    m_Weight: 1
+  - m_Path: Armature/twist_arm_1_L.L/twist_arm_1_L.L
+    m_Weight: 0
+  - m_Path: Armature/twist_arm_1_L.L/twist_arm_1_L.L/twist_arm_1_L.L_end
+    m_Weight: 0
+  - m_Path: Armature/twist_arm_1_L.R/twist_arm_1_L.R
+    m_Weight: 1
+  - m_Path: Armature/twist_arm_1_L.R/twist_arm_1_L.R/twist_arm_1_L.R_end
+    m_Weight: 1
+  - m_Path: Armature/twist_arm_2_L.L/twist_arm_2_L.L
+    m_Weight: 0
+  - m_Path: Armature/twist_arm_2_L.L/twist_arm_2_L.L/twist_arm_2_L.L_end
+    m_Weight: 0
+  - m_Path: Armature/twist_arm_2_L.R/twist_arm_2_L.R
+    m_Weight: 1
+  - m_Path: Armature/twist_arm_2_L.R/twist_arm_2_L.R/twist_arm_2_L.R_end
+    m_Weight: 1
+  - m_Path: Armature/twist_arm_3_L.L/twist_arm_3_L.L
+    m_Weight: 0
+  - m_Path: Armature/twist_arm_3_L.L/twist_arm_3_L.L/twist_arm_3_L.L_end
+    m_Weight: 0
+  - m_Path: Armature/twist_arm_3_L.R/twist_arm_3_L.R
+    m_Weight: 1
+  - m_Path: Armature/twist_arm_3_L.R/twist_arm_3_L.R/twist_arm_3_L.R_end
+    m_Weight: 1
+  - m_Path: Armature/upperarm_L.L/upperarm_L.L
+    m_Weight: 0
+  - m_Path: Armature/upperarm_L.R/upperarm_L.R
+    m_Weight: 1
