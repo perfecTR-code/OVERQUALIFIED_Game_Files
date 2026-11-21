@@ -54,6 +54,11 @@ public class FPSCamera : MonoBehaviour
 
     public float CurrentPitch => xRotation;
 
+    /// <summary>
+    /// Bu karede kameraya uygulanan gercek donus miktari (X: yatay/Yaw derece, Y: dikey/Pitch yukari pozitif derece)
+    /// </summary>
+    public Vector2 LastLookDelta { get; private set; }
+
     private void OnValidate()
     {
         if (cam == null) cam = GetComponent<Camera>();
@@ -128,7 +133,8 @@ public class FPSCamera : MonoBehaviour
         {
             UnlockCursor();
         }
-        else if (Input.GetMouseButtonDown(0) && Cursor.lockState != CursorLockMode.Locked)
+        else if (Input.GetMouseButtonDown(0) && Cursor.lockState != CursorLockMode.Locked
+                 && !WeaponSwaySystem.IsMenuOpen && !WeaponVFXManager.IsMenuOpen)
         {
             LockCursor();
         }
@@ -141,7 +147,10 @@ public class FPSCamera : MonoBehaviour
     {
         // İmleç kilitli değilse kamera dönmesin (UI veya menü etkileşimi için)
         if (Cursor.lockState != CursorLockMode.Locked)
+        {
+            LastLookDelta = Vector2.zero;
             return;
+        }
 
         float rawMouseX = Input.GetAxisRaw("Mouse X");
         float rawMouseY = Input.GetAxisRaw("Mouse Y");
@@ -170,9 +179,13 @@ public class FPSCamera : MonoBehaviour
         fareY = Mathf.Clamp(fareY, -22f, 22f);
 
         // 1. Dikey Bakış (Pitch): Sadece Kamera döner
+        float prevPitch = xRotation;
         xRotation -= fareY;
         xRotation = Mathf.Clamp(xRotation, minDikeyAci, maxDikeyAci);
         transform.localRotation = Quaternion.Euler(xRotation, 0f, 0f);
+
+        float appliedPitch = prevPitch - xRotation;
+        LastLookDelta = new Vector2(fareX, appliedPitch);
 
         // 2. Yatay Bakış (Yaw): Karakterin GÖVDESİ döner
         if (oyuncuGovdesi != null)

@@ -87,6 +87,7 @@ public class WeaponAudioSystem : MonoBehaviour
     // Ses Çalma Kaynakları (AudioSources)
     private AudioSource _weaponAudioSource;
     private AudioSource _handlingAudioSource;
+    private AudioSource _reloadAudioSource;
     private AudioSource _footstepAudioSource;
 
     // Durum Değişkenleri
@@ -133,11 +134,17 @@ public class WeaponAudioSystem : MonoBehaviour
         _weaponAudioSource.playOnAwake = false;
         _weaponAudioSource.priority = 0; // En yüksek öncelik
 
-        // 2. Mekanizma / Şarjör Kaynağı
+        // 2. Mekanizma / Genel Handling Kaynağı
         _handlingAudioSource = gameObject.AddComponent<AudioSource>();
         _handlingAudioSource.spatialBlend = 0f;
         _handlingAudioSource.playOnAwake = false;
         _handlingAudioSource.priority = 32;
+
+        // 2b. Şarjör / Doldurma Kaynağı (Reload iptalinde tek seferde kesilebilir)
+        _reloadAudioSource = gameObject.AddComponent<AudioSource>();
+        _reloadAudioSource.spatialBlend = 0f;
+        _reloadAudioSource.playOnAwake = false;
+        _reloadAudioSource.priority = 30;
 
         // 3. Ayak Sesi Kaynağı
         _footstepAudioSource = gameObject.AddComponent<AudioSource>();
@@ -239,49 +246,60 @@ public class WeaponAudioSystem : MonoBehaviour
 
     public void PlayMagOut(int gunID)
     {
-        if (magOutClip != null && _handlingAudioSource != null)
+        if (magOutClip != null && _reloadAudioSource != null)
         {
-            _handlingAudioSource.pitch = Random.Range(0.98f, 1.02f);
-            _handlingAudioSource.PlayOneShot(magOutClip, handlingVolume);
+            _reloadAudioSource.pitch = Random.Range(0.98f, 1.02f);
+            _reloadAudioSource.PlayOneShot(magOutClip, handlingVolume);
         }
     }
 
     public void PlayMagIn(int gunID)
     {
-        if (magInClip != null && _handlingAudioSource != null)
+        if (magInClip != null && _reloadAudioSource != null)
         {
-            _handlingAudioSource.pitch = Random.Range(0.98f, 1.02f);
-            _handlingAudioSource.PlayOneShot(magInClip, handlingVolume);
+            _reloadAudioSource.pitch = Random.Range(0.98f, 1.02f);
+            _reloadAudioSource.PlayOneShot(magInClip, handlingVolume);
         }
     }
 
     public void PlayBoltCock(int gunID)
     {
         AudioClip clip = boltCockClip != null ? boltCockClip : pistolSlideClip;
-        if (clip != null && _handlingAudioSource != null)
+        if (clip != null && _reloadAudioSource != null)
         {
-            _handlingAudioSource.pitch = Random.Range(0.97f, 1.03f);
-            _handlingAudioSource.PlayOneShot(clip, handlingVolume);
+            _reloadAudioSource.pitch = Random.Range(0.97f, 1.03f);
+            _reloadAudioSource.PlayOneShot(clip, handlingVolume);
         }
     }
 
     public void PlayShotgunPump()
     {
         AudioClip clip = shotgunPumpClip != null ? shotgunPumpClip : boltCockClip;
-        if (clip != null && _handlingAudioSource != null)
+        if (clip != null && _reloadAudioSource != null)
         {
-            _handlingAudioSource.pitch = Random.Range(0.96f, 1.02f);
-            _handlingAudioSource.PlayOneShot(clip, handlingVolume);
+            _reloadAudioSource.pitch = Random.Range(0.96f, 1.02f);
+            _reloadAudioSource.PlayOneShot(clip, handlingVolume);
         }
     }
 
     public void PlayShotgunInsert()
     {
         AudioClip clip = shotgunInsertClip != null ? shotgunInsertClip : magInClip;
-        if (clip != null && _handlingAudioSource != null)
+        if (clip != null && _reloadAudioSource != null)
         {
-            _handlingAudioSource.pitch = Random.Range(1.05f, 1.15f);
-            _handlingAudioSource.PlayOneShot(clip, handlingVolume * 0.9f);
+            _reloadAudioSource.pitch = Random.Range(1.05f, 1.15f);
+            _reloadAudioSource.PlayOneShot(clip, handlingVolume * 0.9f);
+        }
+    }
+
+    /// <summary>
+    /// Devam eden tüm şarjör/doldurma/pompalama seslerini anında keser.
+    /// </summary>
+    public void StopReloadAudio()
+    {
+        if (_reloadAudioSource != null)
+        {
+            _reloadAudioSource.Stop();
         }
     }
 

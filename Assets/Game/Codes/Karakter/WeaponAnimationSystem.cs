@@ -121,6 +121,7 @@ public class WeaponAnimationSystem : MonoBehaviour
     private float _velWeightRun = 0f;
 
     private Coroutine _actionCoroutine = null;
+    private Coroutine _fadeOutCoroutine = null;
     private bool _isActionPlaying = false;
 
     void Awake()
@@ -425,6 +426,35 @@ public class WeaponAnimationSystem : MonoBehaviour
     }
 
     /// <summary>
+    /// Aktif silah için şarjör değiştirme animasyonunu belirtilen toplam süreye tam senkronize şekilde oynatır.
+    /// </summary>
+    public void PlayReloadWithDuration(float desiredDuration, Action onComplete = null)
+    {
+        AnimationClip clip = null;
+        float speed = 1.0f;
+
+        if (_currentWeaponID == 1)
+        {
+            clip = pistolReload;
+            speed = (clip != null && desiredDuration > 0.05f) ? (clip.length / desiredDuration) : pistolReloadAnimSpeed;
+        }
+        else if (_currentWeaponID == 3)
+        {
+            clip = rifleReload;
+            speed = (clip != null && desiredDuration > 0.05f) ? (clip.length / desiredDuration) : 1.0f;
+        }
+
+        if (clip != null)
+        {
+            PlayAction(clip, speed, reloadFadeInDuration, reloadFadeOutDuration, onComplete);
+        }
+        else
+        {
+            onComplete?.Invoke();
+        }
+    }
+
+    /// <summary>
     /// Silahı çekme (Equip) animasyonunu oynatır.
     /// </summary>
     public void PlayEquip(Action onComplete = null)
@@ -505,6 +535,12 @@ public class WeaponAnimationSystem : MonoBehaviour
         {
             StopCoroutine(_actionCoroutine);
             _actionCoroutine = null;
+        }
+
+        if (_fadeOutCoroutine != null)
+        {
+            StopCoroutine(_fadeOutCoroutine);
+            _fadeOutCoroutine = null;
         }
 
         _actionCoroutine = StartCoroutine(ActionRoutine(clip, speed, fadeIn, fadeOut, onComplete));
@@ -599,9 +635,15 @@ public class WeaponAnimationSystem : MonoBehaviour
             _actionCoroutine = null;
         }
 
+        if (_fadeOutCoroutine != null)
+        {
+            StopCoroutine(_fadeOutCoroutine);
+            _fadeOutCoroutine = null;
+        }
+
         if (smooth && gameObject.activeInHierarchy && _actionPlayable.IsValid())
         {
-            StartCoroutine(FastFadeOutRoutine(0.06f));
+            _fadeOutCoroutine = StartCoroutine(FastFadeOutRoutine(0.06f));
         }
         else
         {
@@ -626,11 +668,18 @@ public class WeaponAnimationSystem : MonoBehaviour
             yield return null;
         }
 
+        _fadeOutCoroutine = null;
         HardStopAction();
     }
 
     private void HardStopAction()
     {
+        if (_fadeOutCoroutine != null)
+        {
+            StopCoroutine(_fadeOutCoroutine);
+            _fadeOutCoroutine = null;
+        }
+
         if (_actionPlayable.IsValid() && _graph.IsValid())
         {
             _graph.Disconnect(_rootMixer, 1);

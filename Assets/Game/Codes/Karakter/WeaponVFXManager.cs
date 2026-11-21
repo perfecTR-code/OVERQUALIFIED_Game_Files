@@ -90,6 +90,7 @@ public class WeaponVFXManager : MonoBehaviour
     public KeyCode menuToggleKey = KeyCode.F10;
     public bool enableInGameMenu = true;
     private bool _showMenu = false;
+    public static bool IsMenuOpen => Instance != null && Instance._showMenu;
     private Rect _windowRect = new Rect(20, 20, 360, 520);
 
     // Dinamik Işık Havuzu (Garbage Collector ve FPS drop oluşturmaz)
@@ -289,8 +290,11 @@ public class WeaponVFXManager : MonoBehaviour
             }
             else
             {
-                Cursor.lockState = CursorLockMode.Locked;
-                Cursor.visible = false;
+                if (!WeaponSwaySystem.IsMenuOpen)
+                {
+                    Cursor.lockState = CursorLockMode.Locked;
+                    Cursor.visible = false;
+                }
             }
         }
     }
@@ -357,8 +361,11 @@ public class WeaponVFXManager : MonoBehaviour
         if (GUILayout.Button("KAPAT [F10]"))
         {
             _showMenu = false;
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
+            if (!WeaponSwaySystem.IsMenuOpen)
+            {
+                Cursor.lockState = CursorLockMode.Locked;
+                Cursor.visible = false;
+            }
         }
         GUILayout.EndHorizontal();
 

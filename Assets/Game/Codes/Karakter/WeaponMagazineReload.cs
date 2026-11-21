@@ -219,6 +219,11 @@ public class WeaponMagazineReload : MonoBehaviour
             _reloadRoutine = null;
         }
 
+        if (audioSource != null)
+        {
+            audioSource.Stop();
+        }
+
         if (_initialized && magazine != null)
         {
             if (_originParent != null && magazine.parent != _originParent)

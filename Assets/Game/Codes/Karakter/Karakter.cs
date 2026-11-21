@@ -97,12 +97,25 @@ public class Player1 : MonoBehaviour
     public float Fire_Cooldown_Shotgun = 1.5f;
     public float Fire_Cooldown_Pistol = 0.25f; // Kullanıcı talebi: Tabanca animasyonu yarı hıza çekildi (0.25s)
 
+    [Header("Reload Süreleri (Saniye)")]
+    [Tooltip("Tabanca (Pistol) şarjör doldurma süresi (saniye). Animasyon, şarjör hareketi ve mermi dolumu bu süreye kilitlenir.")]
+    [Range(0.5f, 5.0f)]
+    public float Pistol_Reload_Duration = 2.08f;
+
+    [Tooltip("Tüfek (Rifle / AK-74) şarjör doldurma süresi (saniye).")]
+    [Range(0.5f, 5.0f)]
+    public float Rifle_Reload_Duration = 1.40f;
+
     // ZAMANLAYICILAR
     private float Next_Fire_Time_Right = 0f;
     private float Next_Fire_Time_Left = 0f;
     private float Next_Reload_Time = 0f;
     private Coroutine shotgunReloadCoroutine = null;
     private bool isShotgunReloading = false;
+    private Coroutine activeReloadCoroutine = null;
+    private bool isMagazineReloading = false;
+
+    public bool IsReloading => isMagazineReloading || isShotgunReloading;
 
     [Header("Koşu ve Ateş Dinamikleri (Sprint Mechanics)")]
     [Tooltip("Hızlı koşarken ateş edildikten sonra tekrar koşuya geçebilmek için toparlanma süresi (saniye)")]
@@ -151,6 +164,9 @@ public class Player1 : MonoBehaviour
 
     [Header("VFX Sistemi (Muzzle Flash & Impacts)")]
     public WeaponVFXManager VFXManager;
+
+    [Header("Silah Sallanma Sistemi (Procedural Sway)")]
+    public WeaponSwaySystem SwaySystem;
 
     void Awake()
     {
@@ -223,6 +239,23 @@ public class Player1 : MonoBehaviour
         if (VFXManager == null)
         {
             VFXManager = gameObject.AddComponent<WeaponVFXManager>();
+        }
+
+        if (SwaySystem == null)
+        {
+            SwaySystem = GetComponent<WeaponSwaySystem>();
+        }
+        if (SwaySystem == null)
+        {
+            SwaySystem = GetComponentInChildren<WeaponSwaySystem>(true);
+        }
+        if (SwaySystem == null)
+        {
+            SwaySystem = WeaponSwaySystem.Instance;
+        }
+        if (SwaySystem == null)
+        {
+            SwaySystem = gameObject.AddComponent<WeaponSwaySystem>();
         }
 
         if (Player_Arms_Animator == null)
@@ -366,15 +399,7 @@ public class Player1 : MonoBehaviour
     // --- INPUT VE SİLAH DEĞİŞİMİ ---
     void ChangeGunInput(int selectedID)
     {
-        if (isShotgunReloading)
-        {
-            if (shotgunReloadCoroutine != null)
-            {
-                StopCoroutine(shotgunReloadCoroutine);
-                shotgunReloadCoroutine = null;
-            }
-            isShotgunReloading = false;
-        }
+        CancelAllReloads(instantAnimStop: false);
 
         if (Dual_Weapon_Mode) Left_Gun_ID = selectedID; // Dual modda SOL değişir
         else Right_Gun_ID = selectedID; // Tekli modda SAĞ değişir
@@ -393,19 +418,36 @@ public class Player1 : MonoBehaviour
     // --- ATEŞ ETME KONTROLCÜSÜ ---
     void HandleShooting()
     {
-        // Pompalı doldurulurken kullanıcı ateş etmek isterse kes ve ateş et
-        if (isShotgunReloading)
-        {
-            if (Input.GetButtonDown("Fire1") && Right_Current_Bullet_Shotgun > 0)
-            {
-                InterruptShotgunReload();
-            }
+        if (Cursor.lockState != CursorLockMode.Locked || WeaponSwaySystem.IsMenuOpen || WeaponVFXManager.IsMenuOpen)
             return;
+
+        bool fire1Pressed = Input.GetButtonDown("Fire1");
+        bool fire1Held = Input.GetButton("Fire1");
+        bool fire2Pressed = Dual_Weapon_Mode && Input.GetButtonDown("Fire2");
+        bool fire2Held = Dual_Weapon_Mode && Input.GetButton("Fire2");
+
+        // Herhangi bir silah (Tabanca, Pompalı, Tüfek) reload halindeyken ateş edilirse
+        // reload işlemini, kol/şarjör animasyonunu ve tüm reload seslerini anında iptal et
+        if (IsReloading)
+        {
+            bool wantsToFire = fire1Pressed || fire2Pressed
+                || (!Dual_Weapon_Mode && Right_Gun_ID == 3 && fire1Held)
+                || (Dual_Weapon_Mode && ((Left_Gun_ID == 3 && fire1Held) || (Right_Gun_ID == 3 && fire2Held)));
+
+            if (wantsToFire)
+            {
+                bool hasAmmo = HasAmmoForFireInput(fire1Pressed || fire1Held, fire2Pressed || fire2Held);
+                CancelAllReloads(instantAnimStop: hasAmmo);
+            }
+            else
+            {
+                return;
+            }
         }
 
         // SOL TIK (FIRE 1)
         // Dual modda Sol Eli, Tekli modda Sağ Eli (Ana silahı) ateşler
-        if (Input.GetButton("Fire1") || Input.GetButtonDown("Fire1"))
+        if (fire1Held || fire1Pressed)
         {
             if (Dual_Weapon_Mode) TryFireWeapon(Left_Gun_ID, true); // Sol El
             else TryFireWeapon(Right_Gun_ID, false); // Sağ El
@@ -414,7 +456,7 @@ public class Player1 : MonoBehaviour
         // SAĞ TIK (FIRE 2) - Sadece Dual Mod
         if (Dual_Weapon_Mode)
         {
-            if (Input.GetButton("Fire2") || Input.GetButtonDown("Fire2"))
+            if (fire2Held || fire2Pressed)
             {
                 TryFireWeapon(Right_Gun_ID, false); // Sağ El
             }
@@ -616,11 +658,65 @@ public class Player1 : MonoBehaviour
         return false;
     }
 
-    // --- RELOAD SİSTEMİ (DOLUYKEN ENGELLEMELİ) ---
+    int GetCurrentMagAmmo(int gunID, bool isLeftHand)
+    {
+        if (gunID == 1) return isLeftHand ? Left_Current_Bullet_Pistol : Right_Current_Bullet_Pistol;
+        if (gunID == 2) return isLeftHand ? Left_Current_Bullet_Shotgun : Right_Current_Bullet_Shotgun;
+        if (gunID == 3) return isLeftHand ? Left_Current_Bullet_Rifle : Right_Current_Bullet_Rifle;
+        return 0;
+    }
+
+    bool HasAmmoForFireInput(bool fire1, bool fire2)
+    {
+        if (Dual_Weapon_Mode)
+        {
+            if (fire1 && GetCurrentMagAmmo(Left_Gun_ID, true) > 0) return true;
+            if (fire2 && GetCurrentMagAmmo(Right_Gun_ID, false) > 0) return true;
+            return false;
+        }
+        return fire1 && GetCurrentMagAmmo(Right_Gun_ID, false) > 0;
+    }
+
+    /// <summary>
+    /// Tabanca, Pompalı veya Tüfek için aktif tüm reload işlemlerini, kol animasyonunu,
+    /// şarjör hareketini ve reload seslerini anında iptal eder.
+    /// </summary>
+    public void CancelAllReloads(bool instantAnimStop = true)
+    {
+        if (shotgunReloadCoroutine != null)
+        {
+            StopCoroutine(shotgunReloadCoroutine);
+            shotgunReloadCoroutine = null;
+        }
+        isShotgunReloading = false;
+
+        if (activeReloadCoroutine != null)
+        {
+            StopCoroutine(activeReloadCoroutine);
+            activeReloadCoroutine = null;
+        }
+        isMagazineReloading = false;
+
+        Next_Reload_Time = Time.time;
+
+        Weapon_Anim_System?.InterruptAction(smooth: !instantAnimStop);
+
+        Pistol?.GetComponentInChildren<WeaponMagazineReload>(true)?.CancelReload();
+        Rifle?.GetComponentInChildren<WeaponMagazineReload>(true)?.CancelReload();
+        Dual_Pistol?.GetComponentInChildren<WeaponMagazineReload>(true)?.CancelReload();
+        Dual_Rifle?.GetComponentInChildren<WeaponMagazineReload>(true)?.CancelReload();
+
+        AudioSystem?.StopReloadAudio();
+
+        Next_Fire_Time_Right = Mathf.Min(Next_Fire_Time_Right, Time.time);
+        Next_Fire_Time_Left = Mathf.Min(Next_Fire_Time_Left, Time.time);
+    }
+
+    // --- RELOAD SİSTEMİ (DOLUYKEN ENGELLEMELİ & ZAMANLI) ---
     void HandleReload()
     {
         // 1. Zaten reload yapılıyorsa tekrar basılmasını engelle
-        if (isShotgunReloading || Time.time < Next_Reload_Time) return;
+        if (IsReloading || Time.time < Next_Reload_Time) return;
 
         // 2. Mermi silahın içinde tam doluyken veya yedek mermi yokken reload YAPMA (Her silah tipi için geçerli)
         bool canReloadRight = CanReloadGun(Right_Gun_ID, false);
@@ -640,36 +736,58 @@ public class Player1 : MonoBehaviour
             return;
         }
 
-        bool reloadedAny = false;
-
-        // 3. Önce SOL EL (Sadece Dual Moddaysa ve dolum gerekiyorsa)
-        if (canReloadLeft)
+        float reloadDuration;
+        if (!Dual_Weapon_Mode && Right_Gun_ID == 1)
         {
-            if (Left_Gun_ID == 1) reloadedAny |= ReloadSingleMagazine(ref Left_Current_Bullet_Pistol, ref Total_Pistol_Ammo, Max_Bullet_Pistol_Magazine);
-            else if (Left_Gun_ID == 2) reloadedAny |= ReloadSingleMagazine(ref Left_Current_Bullet_Shotgun, ref Total_Shotgun_Ammo, Max_Bullet_Shotgun_Magazine);
-            else if (Left_Gun_ID == 3) reloadedAny |= ReloadSingleMagazine(ref Left_Current_Bullet_Rifle, ref Total_Rifle_Ammo, Max_Bullet_Rifle_Magazine);
+            reloadDuration = Pistol_Reload_Duration;
+        }
+        else if (!Dual_Weapon_Mode && Right_Gun_ID == 3)
+        {
+            reloadDuration = Rifle_Reload_Duration;
+        }
+        else
+        {
+            reloadDuration = Right_Gun_ID == 1 ? Pistol_Reload_Duration : (Right_Gun_ID == 3 ? Rifle_Reload_Duration : 1.5f);
         }
 
-        // 4. Sonra SAĞ EL (Dolum gerekiyorsa)
-        if (canReloadRight)
+        if (activeReloadCoroutine != null) StopCoroutine(activeReloadCoroutine);
+        activeReloadCoroutine = StartCoroutine(MagazineReloadRoutine(canReloadRight, canReloadLeft, Right_Gun_ID, Left_Gun_ID, reloadDuration));
+    }
+
+    IEnumerator MagazineReloadRoutine(bool reloadRight, bool reloadLeft, int rightGunId, int leftGunId, float duration)
+    {
+        isMagazineReloading = true;
+
+        Weapon_Anim_System?.PlayReloadWithDuration(duration);
+
+        if (reloadRight) TriggerMagazineReload(rightGunId, false, duration);
+        if (reloadLeft) TriggerMagazineReload(leftGunId, true, duration);
+
+        float elapsed = 0f;
+        while (elapsed < duration)
         {
-            if (Right_Gun_ID == 1) reloadedAny |= ReloadSingleMagazine(ref Right_Current_Bullet_Pistol, ref Total_Pistol_Ammo, Max_Bullet_Pistol_Magazine);
-            else if (Right_Gun_ID == 2) reloadedAny |= ReloadSingleMagazine(ref Right_Current_Bullet_Shotgun, ref Total_Shotgun_Ammo, Max_Bullet_Shotgun_Magazine);
-            else if (Right_Gun_ID == 3) reloadedAny |= ReloadSingleMagazine(ref Right_Current_Bullet_Rifle, ref Total_Rifle_Ammo, Max_Bullet_Rifle_Magazine);
+            elapsed += Time.deltaTime;
+            yield return null;
         }
 
-        if (!reloadedAny) return;
+        if (reloadLeft)
+        {
+            if (leftGunId == 1) ReloadSingleMagazine(ref Left_Current_Bullet_Pistol, ref Total_Pistol_Ammo, Max_Bullet_Pistol_Magazine);
+            else if (leftGunId == 2) ReloadSingleMagazine(ref Left_Current_Bullet_Shotgun, ref Total_Shotgun_Ammo, Max_Bullet_Shotgun_Magazine);
+            else if (leftGunId == 3) ReloadSingleMagazine(ref Left_Current_Bullet_Rifle, ref Total_Rifle_Ammo, Max_Bullet_Rifle_Magazine);
+        }
 
-        // Dolum süresi boyunca tekrar basılmasını engelle (Animasyon süresiyle tam senkron)
-        float reloadDuration = Weapon_Anim_System != null ? Weapon_Anim_System.GetReloadDuration(Right_Gun_ID) : (Right_Gun_ID == 3 ? 1.4f : 1.2f);
-        Next_Reload_Time = Time.time + reloadDuration;
+        if (reloadRight)
+        {
+            if (rightGunId == 1) ReloadSingleMagazine(ref Right_Current_Bullet_Pistol, ref Total_Pistol_Ammo, Max_Bullet_Pistol_Magazine);
+            else if (rightGunId == 2) ReloadSingleMagazine(ref Right_Current_Bullet_Shotgun, ref Total_Shotgun_Ammo, Max_Bullet_Shotgun_Magazine);
+            else if (rightGunId == 3) ReloadSingleMagazine(ref Right_Current_Bullet_Rifle, ref Total_Rifle_Ammo, Max_Bullet_Rifle_Magazine);
+        }
 
         UpdateAllAmmoUI();
-        if (Weapon_Anim_System != null) Weapon_Anim_System.PlayReload();
-
-        // Şarjör mekanik animasyonunu tetikle (Pistol ve Rifle için)
-        if (canReloadRight) TriggerMagazineReload(Right_Gun_ID, false, reloadDuration);
-        if (canReloadLeft) TriggerMagazineReload(Left_Gun_ID, true, reloadDuration);
+        isMagazineReloading = false;
+        activeReloadCoroutine = null;
+        Next_Reload_Time = Time.time + 0.05f;
     }
 
     // --- ÇOK AŞAMALI TEK TEK FİŞEK DOLDURMA (SHOTGUN) ---
@@ -689,11 +807,6 @@ public class Player1 : MonoBehaviour
         // 2. Fişekleri teker teker doldur
         while (Right_Current_Bullet_Shotgun < Max_Bullet_Shotgun_Magazine && Total_Shotgun_Ammo > 0)
         {
-            if (Input.GetButtonDown("Fire1"))
-            {
-                break;
-            }
-
             if (Weapon_Anim_System != null)
             {
                 Weapon_Anim_System.PlayShotgunReloadInsert();
@@ -710,23 +823,10 @@ public class Player1 : MonoBehaviour
             UpdateAllAmmoUI();
 
             // Kalan yerleştirme animasyonu süresi
-            float waitTimer = 0f;
-            bool cancelRequested = false;
             float remaining = insertTime * 0.35f;
-            while (waitTimer < remaining)
+            if (remaining > 0f)
             {
-                if (Input.GetButtonDown("Fire1"))
-                {
-                    cancelRequested = true;
-                    break;
-                }
-                waitTimer += Time.deltaTime;
-                yield return null;
-            }
-
-            if (cancelRequested)
-            {
-                break;
+                yield return new WaitForSeconds(remaining);
             }
         }
 
@@ -747,19 +847,7 @@ public class Player1 : MonoBehaviour
     void InterruptShotgunReload()
     {
         if (!isShotgunReloading) return;
-        if (shotgunReloadCoroutine != null)
-        {
-            StopCoroutine(shotgunReloadCoroutine);
-            shotgunReloadCoroutine = null;
-        }
-
-        if (Weapon_Anim_System != null)
-        {
-            Weapon_Anim_System.InterruptAction();
-        }
-
-        isShotgunReloading = false;
-        Next_Fire_Time_Right = Time.time;
+        CancelAllReloads(instantAnimStop: true);
     }
 
     void TriggerMagazineReload(int gunID, bool isLeftHand, float duration)
@@ -813,21 +901,7 @@ public class Player1 : MonoBehaviour
     // --- GÖRSEL VE UI GÜNCELLEME ---
     void RefreshWeaponState()
     {
-        if (isShotgunReloading)
-        {
-            if (shotgunReloadCoroutine != null)
-            {
-                StopCoroutine(shotgunReloadCoroutine);
-                shotgunReloadCoroutine = null;
-            }
-            isShotgunReloading = false;
-        }
-
-        // Önceki şarjör animasyonlarını temizle
-        Pistol?.GetComponentInChildren<WeaponMagazineReload>(true)?.CancelReload();
-        Rifle?.GetComponentInChildren<WeaponMagazineReload>(true)?.CancelReload();
-        Dual_Pistol?.GetComponentInChildren<WeaponMagazineReload>(true)?.CancelReload();
-        Dual_Rifle?.GetComponentInChildren<WeaponMagazineReload>(true)?.CancelReload();
+        CancelAllReloads(instantAnimStop: false);
 
         // 1. SİLAH MODELLERİNİ AÇ/KAPA (SADECE SEÇİLEN SİLAH GÖZÜKÜR, DİĞERLERİ ANINDA KAPANIR)
         Transform searchRoot = Camera.main != null ? Camera.main.transform : transform;

@@ -6,7 +6,7 @@ using UnityEngine.SceneManagement;
 [InitializeOnLoad]
 public static class SetupSceneWeapons
 {
-    private const string SceneWeaponsKey = "SceneWeaponsSetup_V6";
+    private const string SceneWeaponsKey = "SceneWeaponsSetup_V7";
 
     static SetupSceneWeapons()
     {
@@ -16,6 +16,26 @@ public static class SetupSceneWeapons
             {
                 SessionState.SetBool(SceneWeaponsKey, true);
                 RunSetup();
+            }
+        };
+
+        EditorApplication.playModeStateChanged += state =>
+        {
+            if (state == PlayModeStateChange.EnteredEditMode)
+            {
+                string pendingJson = SessionState.GetString("WeaponSway_PendingEditorSave", "");
+                if (!string.IsNullOrEmpty(pendingJson))
+                {
+                    SessionState.EraseString("WeaponSway_PendingEditorSave");
+                    var sway = Object.FindFirstObjectByType<WeaponSwaySystem>();
+                    if (sway != null)
+                    {
+                        sway.ImportFromJson(pendingJson);
+                        EditorUtility.SetDirty(sway);
+                        EditorSceneManager.MarkSceneDirty(sway.gameObject.scene);
+                        Debug.Log("[SetupSceneWeapons] Play Mode'da kaydedilen WeaponSwaySystem ayarları sahneye kalıcı olarak aktarıldı.");
+                    }
+                }
             }
         };
     }
@@ -201,6 +221,13 @@ public static class SetupSceneWeapons
         playerComp.VFXManager = vfxManager;
         EditorUtility.SetDirty(vfxManager);
         Debug.Log("[SetupSceneWeapons] WeaponVFXManager Character üzerine eklendi ve prefabları bağlandı.");
+
+        // 7. WEAPON SWAY SISTEMI
+        var swaySystem = character.GetComponent<WeaponSwaySystem>();
+        if (swaySystem == null) swaySystem = character.AddComponent<WeaponSwaySystem>();
+        playerComp.SwaySystem = swaySystem;
+        EditorUtility.SetDirty(swaySystem);
+        Debug.Log("[SetupSceneWeapons] WeaponSwaySystem Character üzerine eklendi ve bağlandı.");
 
         EditorUtility.SetDirty(character);
         EditorUtility.SetDirty(playerComp);
